@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理面板</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-admin">
+    <div class="container dashboard-container">
+        <div class="header-row">
+            <h1>📊 访客管理</h1>
+            <div class="header-actions">
+                <span class="badge">共 {{ total }} 条</span>
+                <span class="badge today">今日 {{ today }} 条</span>
+                <a href="/qrcode" class="btn-link">📱 二维码</a>
+                <a href="/admin/logout" class="btn-link logout">退出</a>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card">
+                <h3>每日访客</h3>
+                <canvas id="dailyChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>访客排行</h3>
+                <canvas id="topChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <h3>访客记录</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>姓名</th>
+                            <th>事由</th>
+                            <th>电话</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in visitors %}
+                        <tr>
+                            <td>{{ v.created_at }}</td>
+                            <td>{{ v.name }}</td>
+                            <td>{{ v.reason or '-' }}</td>
+                            <td>{{ v.phone or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    fetch('/api/stats').then(r => r.json()).then(data => {
+        // Daily chart
+        new Chart(document.getElementById('dailyChart'), {
+            type: 'bar',
+            data: {
+                labels: (data.daily || []).reverse().map(d => d.day.slice(5)),
+                datasets: [{
+                    label: '访客数',
+                    data: (data.daily || []).reverse().map(d => d.count),
+                    backgroundColor: '#4f8cf7'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        // Top chart
+        new Chart(document.getElementById('topChart'), {
+            type: 'doughnut',
+            data: {
+                labels: (data.top || []).map(d => d.name),
+                datasets: [{
+                    data: (data.top || []).map(d => d.count),
+                    backgroundColor: ['#4f8cf7','#34c759','#ff9500','#ff3b30','#af52de']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+    });
+    </script>
+</body>
+</html>

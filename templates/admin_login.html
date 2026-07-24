@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-admin">
+    <div class="container admin-container">
+        <div class="card">
+            <h1>🔐 管理员登录</h1>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required placeholder="请输入管理员密码">
+                </div>
+                {% if error %}
+                <div class="result-error">{{ error }}</div>
+                {% endif %}
+                <button type="submit" class="btn-submit">登录</button>
+            </form>
+            <a href="/visit" class="back-link">← 访客登记</a>
+        </div>
+    </div>
+</body>
+</html>

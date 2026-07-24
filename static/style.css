@@ -1,0 +1,52 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; color: #1d1d1f; }
+.bg-visitor { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.bg-admin { background: #f5f5f7; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+.visitor-container, .admin-container, .qrcode-container { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+.card { background: #fff; border-radius: 20px; padding: 40px; width: 100%; max-width: 440px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+h1 { font-size: 24px; margin-bottom: 8px; }
+.subtitle { color: #86868b; margin-bottom: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #1d1d1f; }
+.required { color: #ff3b30; }
+.form-group input { width: 100%; padding: 12px 16px; border: 1.5px solid #d2d2d7; border-radius: 12px; font-size: 16px; outline: none; transition: border-color 0.2s; }
+.form-group input:focus { border-color: #4f8cf7; }
+.btn-submit { width: 100%; padding: 14px; background: #4f8cf7; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+.btn-submit:hover { background: #3a7be5; }
+.btn-submit:disabled { background: #a0b8e0; cursor: not-allowed; }
+.result-hidden { display: none; margin-top: 16px; padding: 12px; border-radius: 10px; font-size: 14px; }
+.result-success { display: block; margin-top: 16px; padding: 12px; border-radius: 10px; font-size: 14px; background: #e8f5e9; color: #2e7d32; }
+.result-error { display: block; margin-top: 16px; padding: 12px; border-radius: 10px; font-size: 14px; background: #fdecea; color: #c62828; }
+.back-link { display: block; text-align: center; margin-top: 20px; color: #86868b; text-decoration: none; font-size: 14px; }
+.back-link:hover { color: #4f8cf7; }
+.dashboard-container { max-width: 1000px; }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.badge { background: #e8ecf4; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+.badge.today { background: #4f8cf7; color: #fff; }
+.btn-link { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; text-decoration: none; background: #e8ecf4; color: #1d1d1f; }
+.btn-link.logout { background: #fdecea; color: #c62828; }
+.btn-link:hover { opacity: 0.8; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media (max-width: 640px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.chart-card h3 { font-size: 15px; margin-bottom: 12px; color: #86868b; }
+.table-card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.table-card h3 { font-size: 15px; margin-bottom: 12px; color: #86868b; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #f0f0f2; color: #86868b; font-weight: 500; }
+td { padding: 10px 12px; border-bottom: 1px solid #f0f0f2; }
+tr:hover td { background: #f8f8fa; }
+.qrcode-container .card { max-width: 500px; }
+.qrcode-img { margin: 24px 0; }
+.qrcode-img img { width: 240px; height: 240px; }
+.qrcode-url { color: #86868b; font-size: 12px; word-break: break-all; margin-bottom: 8px; }
+.qrcode-hint { color: #1d1d1f; font-size: 14px; margin-bottom: 20px; }
+.nfc-info { text-align: left; background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+.nfc-info h3 { font-size: 15px; margin-bottom: 10px; }
+.nfc-info ol { padding-left: 20px; font-size: 14px; line-height: 1.8; }
+.nfc-info code { background: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; word-break: break-all; }
+.print-section { margin: 16px 0; }
+.print-section .btn-submit { max-width: 240px; display: inline-block; }

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码与NFC</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-admin">
+    <div class="container qrcode-container">
+        <div class="card" style="text-align:center">
+            <h1>📱 访客登记入口</h1>
+            <div class="qrcode-img">
+                <img src="/api/qrcode.png" alt="访客登记二维码">
+            </div>
+            <p class="qrcode-url">{{ base_url }}/visit</p>
+            <p class="qrcode-hint">手机扫码 或 碰 NFC 即可打开访客登记页</p>
+            <div class="nfc-info">
+                <h3>📌 NFC 设置方法</h3>
+                <ol>
+                    <li>购买 NTAG213 或 NTAG215 NFC 贴纸</li>
+                    <li>用手机 NFC 工具 App（如 NFC Tools）写入以下 URL：</li>
+                    <code>{{ base_url }}/visit</code>
+                    <li>贴在门禁二维码旁边即可</li>
+                </ol>
+            </div>
+            <div class="print-section">
+                <a href="/api/qrcode.png" download="访客登记二维码.png" class="btn-submit">下载二维码打印</a>
+            </div>
+            <a href="/admin/dashboard" class="back-link">← 返回管理面板</a>
+        </div>
+    </div>
+</body>
+</html>
