@@ -36,6 +36,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>照片</th>
                             <th>时间</th>
                             <th>姓名</th>
                             <th>事由</th>
@@ -45,6 +46,7 @@
                     <tbody>
                         {% for v in visitors %}
                         <tr>
+                            <td>{% if v.photo %}<img src="{{ v.photo }}" class="photo-thumb" onclick="showPhoto(this.src)">{% else %}<span class="photo-empty">-</span>{% endif %}</td>
                             <td>{{ v.created_at }}</td>
                             <td>{{ v.name }}</td>
                             <td>{{ v.reason or '-' }}</td>
@@ -58,6 +60,15 @@
     </div>
 
     <script>
+    function showPhoto(src) {
+        var l = document.createElement('div');
+        l.className = 'photo-lightbox';
+        l.onclick = function(){ l.remove(); };
+        var i = document.createElement('img');
+        i.src = src;
+        l.appendChild(i);
+        document.body.appendChild(l);
+    }
     fetch('/api/stats').then(r => r.json()).then(data => {
         // Daily chart
         new Chart(document.getElementById('dailyChart'), {

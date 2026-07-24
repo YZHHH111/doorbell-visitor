@@ -24,12 +24,35 @@
                     <label for="phone">电话</label>
                     <input type="tel" id="phone" name="phone" placeholder="选填，方便联系">
                 </div>
+                <div class="form-group">
+                    <label>拍照（选填）</label>
+                    <div class="photo-upload" id="photoBox" onclick="document.getElementById('photoInput').click()">
+                        <input type="file" id="photoInput" name="photo" accept="image/*" capture="environment" style="display:none">
+                        <div class="photo-placeholder" id="photoPlaceholder">
+                            <span class="camera-icon">📷</span>
+                            <span class="photo-text">点击拍照或选择照片</span>
+                        </div>
+                        <img id="photoPreview" class="photo-preview-hidden">
+                    </div>
+                </div>
                 <button type="submit" class="btn-submit">提交登记</button>
             </form>
             <div id="result" class="result-hidden"></div>
         </div>
     </div>
     <script>
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('photoPreview').src = ev.target.result;
+                    document.getElementById('photoPreview').className = 'photo-preview-visible';
+                    document.getElementById('photoPlaceholder').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
         document.getElementById('visitorForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
@@ -40,12 +63,14 @@
             try {
                 const resp = await fetch('/api/visitor/submit', {
                     method: 'POST',
-                    body: new URLSearchParams(new FormData(form))
+                    body: new FormData(form)
                 });
                 const data = await resp.json();
                 result.className = 'result-success';
                 result.textContent = data.message || '登记成功！';
                 form.reset();
+                document.getElementById('photoPreview').className = 'photo-preview-hidden';
+                document.getElementById('photoPlaceholder').style.display = '';
             } catch (err) {
                 result.className = 'result-error';
                 result.textContent = '提交失败，请重试';

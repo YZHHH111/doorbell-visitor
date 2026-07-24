@@ -1,6 +1,7 @@
 import os
 import sqlite3
-import hashlib
+import base64
+import uuid
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, session, send_file
 from io import BytesIO
@@ -10,6 +11,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24).hex()
 DB_PATH = os.path.join(os.path.dirname(__file__), 'visitors.db')
 ADMIN_PASSWORD = "wq123456"
+MAX_PHOTO_SIZE = 500 * 1024
 
 
 def get_db():
@@ -25,7 +27,12 @@ def init_db():
                      name TEXT NOT NULL,
                      reason TEXT DEFAULT '',
                      phone TEXT DEFAULT '',
+                     photo TEXT DEFAULT '',
                      created_at TEXT NOT NULL)''')
+    try:
+        conn.execute("ALTER TABLE visitors ADD COLUMN photo TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -50,9 +57,16 @@ def visitor_submit():
     phone = request.form.get('phone', '').strip()
     if not name:
         return jsonify({'error': '请填写姓名'}), 400
+    photo = ''
+    if 'photo' in request.files:
+        f = request.files['photo']
+        if f and f.filename:
+            data = f.read()
+            if len(data) <= MAX_PHOTO_SIZE:
+                photo = 'data:' + (f.content_type or 'image/jpeg') + ';base64,' + base64.b64encode(data).decode()
     conn = get_db()
-    conn.execute("INSERT INTO visitors (name, reason, phone, created_at) VALUES (?, ?, ?, ?)",
-                 (name, reason, phone, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    conn.execute("INSERT INTO visitors (name, reason, phone, photo, created_at) VALUES (?, ?, ?, ?, ?)",
+                 (name, reason, phone, photo, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     conn.commit()
     conn.close()
     return jsonify({'status': 'ok', 'message': f'{name}，登记成功！'})
