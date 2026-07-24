@@ -1,17 +1,25 @@
 import os
 import sqlite3
 import base64
-import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, session, send_file
 from io import BytesIO
 import qrcode
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24).hex()
-DB_PATH = os.path.join(os.path.dirname(__file__), 'visitors.db')
+DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.dirname(__file__), 'visitors.db'))
 ADMIN_PASSWORD = "wq123456"
-MAX_PHOTO_SIZE = 500 * 1024
+MAX_PHOTO_SIZE = 2 * 1024 * 1024
+BJ_TZ = timezone(timedelta(hours=8))
+
+
+def bj_now():
+    return datetime.now(BJ_TZ).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def bj_today():
+    return datetime.now(BJ_TZ).strftime('%Y-%m-%d')
 
 
 def get_db():
@@ -66,7 +74,7 @@ def visitor_submit():
                 photo = 'data:' + (f.content_type or 'image/jpeg') + ';base64,' + base64.b64encode(data).decode()
     conn = get_db()
     conn.execute("INSERT INTO visitors (name, reason, phone, photo, created_at) VALUES (?, ?, ?, ?, ?)",
-                 (name, reason, phone, photo, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+                 (name, reason, phone, photo, bj_now()))
     conn.commit()
     conn.close()
     return jsonify({'status': 'ok', 'message': f'{name}，登记成功！'})
@@ -98,7 +106,7 @@ def admin_dashboard():
     conn = get_db()
     rows = conn.execute("SELECT * FROM visitors ORDER BY created_at DESC LIMIT 200").fetchall()
     total = conn.execute("SELECT COUNT(*) as c FROM visitors").fetchone()['c']
-    today = conn.execute("SELECT COUNT(*) as c FROM visitors WHERE date(created_at) = date('now')").fetchone()['c']
+    today = conn.execute("SELECT COUNT(*) as c FROM visitors WHERE created_at >= ?", (bj_today(),)).fetchone()['c']
     conn.close()
     return render_template('admin_dashboard.html', visitors=[dict(r) for r in rows], total=total, today=today)
 
