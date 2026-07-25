@@ -12,8 +12,8 @@
         <div class="header-row">
             <h1>📊 访客管理</h1>
             <div class="header-actions">
-                <span class="badge">共 {{ total }} 条</span>
-                <span class="badge today">今日 {{ today }} 条</span>
+                <span class="badge" id="totalBadge">共 0 条</span>
+                <span class="badge today" id="todayBadge">今日 0 条</span>
                 <a href="/qrcode" class="btn-link">📱 二维码</a>
                 <a href="/admin/logout" class="btn-link logout">退出</a>
             </div>
@@ -31,7 +31,7 @@
         </div>
 
         <div class="table-card">
-            <h3>访客记录</h3>
+            <h3>访客记录 <span class="badge" id="liveBadge" style="display:none;background:#34c759;color:#fff">新</span></h3>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -43,16 +43,7 @@
                             <th>电话</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for v in visitors %}
-                        <tr>
-                            <td>{% if v.photo %}<img src="{{ v.photo }}" class="photo-thumb" onclick="showPhoto(this.src)">{% else %}<span class="photo-empty">-</span>{% endif %}</td>
-                            <td>{{ v.created_at }}</td>
-                            <td>{{ v.name }}</td>
-                            <td>{{ v.reason or '-' }}</td>
-                            <td>{{ v.phone or '-' }}</td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="visitorBody">
                     </tbody>
                 </table>
             </div>
@@ -60,6 +51,9 @@
     </div>
 
     <script>
+    let dailyChart = null, topChart = null;
+    let lastId = 0;
+
     function showPhoto(src) {
         var l = document.createElement('div');
         l.className = 'photo-lightbox';
@@ -69,33 +63,83 @@
         l.appendChild(i);
         document.body.appendChild(l);
     }
-    fetch('/api/stats').then(r => r.json()).then(data => {
-        // Daily chart
-        new Chart(document.getElementById('dailyChart'), {
+
+    function rowHtml(v) {
+        var photo = '<span class="photo-empty">-</span>';
+        if (v.photo) photo = '<img src="' + v.photo + '" class="photo-thumb" onclick="showPhoto(this.src)">';
+        else if (v.reason === '摄像头识别') photo = '<span style="font-size:20px">📷</span>';
+        return '<tr class="new-row">'
+            + '<td>' + photo + '</td>'
+            + '<td>' + v.created_at + '</td>'
+            + '<td>' + v.name + '</td>'
+            + '<td>' + (v.reason || '-') + '</td>'
+            + '<td>' + (v.phone || '-') + '</td>'
+            + '</tr>';
+    }
+
+    async function loadInitial() {
+        var r = await fetch('/api/visitor/list');
+        var data = await r.json();
+        var tbody = document.getElementById('visitorBody');
+        tbody.innerHTML = '';
+        data.reverse();
+        data.forEach(function(v) {
+            tbody.innerHTML = rowHtml(v) + tbody.innerHTML;
+        });
+        if (data.length > 0) lastId = data[data.length - 1].id;
+        updateBadges();
+        loadCharts();
+    }
+
+    async function pollNew() {
+        var r = await fetch('/api/visitor/latest?after_id=' + lastId);
+        var data = await r.json();
+        if (data.length === 0) return;
+        var tbody = document.getElementById('visitorBody');
+        data.reverse();
+        data.forEach(function(v) {
+            tbody.innerHTML = rowHtml(v) + tbody.innerHTML;
+            if (v.id > lastId) lastId = v.id;
+        });
+        document.getElementById('liveBadge').style.display = '';
+        setTimeout(function() { document.getElementById('liveBadge').style.display = 'none'; }, 3000);
+        updateBadges();
+        loadCharts();
+    }
+
+    async function updateBadges() {
+        var r = await fetch('/api/visitor/list');
+        var data = await r.json();
+        document.getElementById('totalBadge').textContent = '共 ' + data.length + ' 条';
+        var today = data.filter(function(v) { return v.created_at && v.created_at.slice(0,10) === new Date().toISOString().slice(0,10); });
+        document.getElementById('todayBadge').textContent = '今日 ' + today.length + ' 条';
+    }
+
+    async function loadCharts() {
+        var r = await fetch('/api/stats');
+        var data = await r.json();
+        if (dailyChart) dailyChart.destroy();
+        if (topChart) topChart.destroy();
+        dailyChart = new Chart(document.getElementById('dailyChart'), {
             type: 'bar',
             data: {
-                labels: (data.daily || []).reverse().map(d => d.day.slice(5)),
-                datasets: [{
-                    label: '访客数',
-                    data: (data.daily || []).reverse().map(d => d.count),
-                    backgroundColor: '#4f8cf7'
-                }]
+                labels: (data.daily || []).reverse().map(function(d) { return d.day.slice(5); }),
+                datasets: [{ label: '访客数', data: (data.daily || []).reverse().map(function(d) { return d.count; }), backgroundColor: '#4f8cf7' }]
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
-        // Top chart
-        new Chart(document.getElementById('topChart'), {
+        topChart = new Chart(document.getElementById('topChart'), {
             type: 'doughnut',
             data: {
-                labels: (data.top || []).map(d => d.name),
-                datasets: [{
-                    data: (data.top || []).map(d => d.count),
-                    backgroundColor: ['#4f8cf7','#34c759','#ff9500','#ff3b30','#af52de']
-                }]
+                labels: (data.top || []).map(function(d) { return d.name; }),
+                datasets: [{ data: (data.top || []).map(function(d) { return d.count; }), backgroundColor: ['#4f8cf7','#34c759','#ff9500','#ff3b30','#af52de'] }]
             },
             options: { responsive: true, plugins: { legend: { position: 'right' } } }
         });
-    });
+    }
+
+    loadInitial();
+    setInterval(pollNew, 3000);
     </script>
 </body>
 </html>

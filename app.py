@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import base64
+import hashlib
 from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, session, send_file
 from io import BytesIO
@@ -73,11 +74,38 @@ def visitor_submit():
             if len(data) <= MAX_PHOTO_SIZE:
                 photo = 'data:' + (f.content_type or 'image/jpeg') + ';base64,' + base64.b64encode(data).decode()
     conn = get_db()
-    conn.execute("INSERT INTO visitors (name, reason, phone, photo, created_at) VALUES (?, ?, ?, ?, ?)",
-                 (name, reason, phone, photo, bj_now()))
+    cur = conn.execute("INSERT INTO visitors (name, reason, phone, photo, created_at) VALUES (?, ?, ?, ?, ?)",
+                       (name, reason, phone, photo, bj_now()))
+    new_id = cur.lastrowid
     conn.commit()
     conn.close()
-    return jsonify({'status': 'ok', 'message': f'{name}，登记成功！'})
+    return jsonify({'status': 'ok', 'message': f'{name}，登记成功！', 'id': new_id})
+
+
+@app.route('/api/visitor/camera', methods=['POST'])
+def visitor_camera():
+    auth = request.headers.get('Authorization', '')
+    token = hashlib.sha256(b'wq123456').hexdigest()
+    if auth != f'Bearer {token}':
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json()
+    if not data or not data.get('name'):
+        return jsonify({'error': 'name required'}), 400
+    conn = get_db()
+    conn.execute("INSERT INTO visitors (name, reason, photo, created_at) VALUES (?, ?, ?, ?)",
+                 (data['name'], '摄像头识别', '', bj_now()))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/api/visitor/latest')
+def visitor_latest():
+    after_id = request.args.get('after_id', '0')
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM visitors WHERE id > ? ORDER BY id ASC", (after_id,)).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 
 @app.route('/api/visitor/list')
