@@ -3,48 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理面板</title>
+    <title>摄像头识别记录</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-admin">
     <div class="container dashboard-container">
         <div class="header-row">
-            <h1>📊 访客管理</h1>
+            <h1>📷 摄像头识别</h1>
             <div class="header-actions">
                 <span class="badge" id="totalBadge">共 0 条</span>
                 <span class="badge today" id="todayBadge">今日 0 条</span>
                 <a href="/qrcode" class="btn-link">📱 二维码</a>
-                <a href="/admin/camera" class="btn-link">📷 摄像头</a>
+                <a href="/admin/dashboard" class="btn-link">📊 管理面板</a>
                 <a href="/admin/logout" class="btn-link logout">退出</a>
             </div>
         </div>
 
-        <div class="charts-row">
-            <div class="chart-card">
-                <h3>每日访客</h3>
-                <canvas id="dailyChart"></canvas>
-            </div>
-            <div class="chart-card">
-                <h3>访客排行</h3>
-                <canvas id="topChart"></canvas>
-            </div>
-        </div>
-
         <div class="table-card">
-            <h3>访客记录 <span class="badge" id="liveBadge" style="display:none;background:#34c759;color:#fff">新</span></h3>
+            <h3>识别记录 <span class="badge" id="liveBadge" style="display:none;background:#34c759;color:#fff">新</span></h3>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>照片</th>
                             <th>时间</th>
                             <th>姓名</th>
-                            <th>事由</th>
-                            <th>电话</th>
+                            <th>照片</th>
                         </tr>
                     </thead>
-                    <tbody id="visitorBody">
+                    <tbody id="cameraBody">
                     </tbody>
                 </table>
             </div>
@@ -52,7 +38,6 @@
     </div>
 
     <script>
-    let dailyChart = null, topChart = null;
     let lastId = 0;
 
     function showPhoto(src) {
@@ -66,37 +51,39 @@
     }
 
     function rowHtml(v) {
-        var photo = '<span class="photo-empty">-</span>';
+        var photo = '-';
         if (v.photo) photo = '<img src="' + v.photo + '" class="photo-thumb" onclick="showPhoto(this.src)">';
-        else if (v.reason === '摄像头识别') photo = '<span style="font-size:20px">📷</span>';
         return '<tr class="new-row">'
-            + '<td>' + photo + '</td>'
             + '<td>' + v.created_at + '</td>'
             + '<td>' + v.name + '</td>'
-            + '<td>' + (v.reason || '-') + '</td>'
-            + '<td>' + (v.phone || '-') + '</td>'
+            + '<td>' + photo + '</td>'
             + '</tr>';
     }
 
     async function loadInitial() {
         var r = await fetch('/api/visitor/list');
-        var data = await r.json();
-        var tbody = document.getElementById('visitorBody');
-        tbody.innerHTML = '';
+        var all = await r.json();
+        var data = all.filter(function(v) { return v.reason === '摄像头识别'; });
+        var tbody = document.getElementById('cameraBody');
         data.reverse();
         data.forEach(function(v) {
             tbody.innerHTML = rowHtml(v) + tbody.innerHTML;
         });
-        if (data.length > 0) lastId = data[data.length - 1].id;
+        if (data.length > 0) {
+            lastId = data[data.length - 1].id;
+        } else {
+            // fallback: find max id among all records
+            if (all.length > 0) lastId = all[0].id;
+        }
         updateBadges();
-        loadCharts();
     }
 
     async function pollNew() {
         var r = await fetch('/api/visitor/latest?after_id=' + lastId);
-        var data = await r.json();
+        var all = await r.json();
+        var data = all.filter(function(v) { return v.reason === '摄像头识别'; });
         if (data.length === 0) return;
-        var tbody = document.getElementById('visitorBody');
+        var tbody = document.getElementById('cameraBody');
         data.reverse();
         data.forEach(function(v) {
             tbody.innerHTML = rowHtml(v) + tbody.innerHTML;
@@ -105,38 +92,15 @@
         document.getElementById('liveBadge').style.display = '';
         setTimeout(function() { document.getElementById('liveBadge').style.display = 'none'; }, 3000);
         updateBadges();
-        loadCharts();
     }
 
     async function updateBadges() {
         var r = await fetch('/api/visitor/list');
-        var data = await r.json();
+        var all = await r.json();
+        var data = all.filter(function(v) { return v.reason === '摄像头识别'; });
         document.getElementById('totalBadge').textContent = '共 ' + data.length + ' 条';
         var today = data.filter(function(v) { return v.created_at && v.created_at.slice(0,10) === new Date().toISOString().slice(0,10); });
         document.getElementById('todayBadge').textContent = '今日 ' + today.length + ' 条';
-    }
-
-    async function loadCharts() {
-        var r = await fetch('/api/stats');
-        var data = await r.json();
-        if (dailyChart) dailyChart.destroy();
-        if (topChart) topChart.destroy();
-        dailyChart = new Chart(document.getElementById('dailyChart'), {
-            type: 'bar',
-            data: {
-                labels: (data.daily || []).reverse().map(function(d) { return d.day.slice(5); }),
-                datasets: [{ label: '访客数', data: (data.daily || []).reverse().map(function(d) { return d.count; }), backgroundColor: '#4f8cf7' }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-        topChart = new Chart(document.getElementById('topChart'), {
-            type: 'doughnut',
-            data: {
-                labels: (data.top || []).map(function(d) { return d.name; }),
-                datasets: [{ data: (data.top || []).map(function(d) { return d.count; }), backgroundColor: ['#4f8cf7','#34c759','#ff9500','#ff3b30','#af52de'] }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'right' } } }
-        });
     }
 
     loadInitial();

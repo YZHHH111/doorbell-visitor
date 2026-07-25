@@ -144,6 +144,12 @@ def admin_logout():
     session.pop('admin', None)
     return redirect('/admin')
 
+@app.route('/admin/camera')
+def admin_camera():
+    if not session.get('admin'):
+        return redirect('/admin')
+    return render_template('admin_camera.html')
+
 
 @app.route('/qrcode')
 def qrcode_page():
