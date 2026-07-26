@@ -50,6 +50,11 @@ def init_db():
         conn.execute("ALTER TABLE visitors ADD COLUMN humidity REAL DEFAULT NULL")
     except sqlite3.OperationalError:
         pass
+    conn.execute('''CREATE TABLE IF NOT EXISTS sensor_log
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     temperature REAL,
+                     humidity REAL,
+                     created_at TEXT NOT NULL)''')
     conn.commit()
     conn.close()
 
@@ -182,14 +187,38 @@ def qrcode_png():
     return send_file(buf, mimetype='image/png')
 
 
+@app.route('/api/sensor/upload', methods=['POST'])
+def sensor_upload():
+    auth = request.headers.get('Authorization', '')
+    token = hashlib.sha256(b'wq123456').hexdigest()
+    if auth != f'Bearer {token}':
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'no data'}), 400
+    temperature = data.get('temperature')
+    humidity = data.get('humidity')
+    if temperature is not None:
+        try: temperature = float(temperature)
+        except: temperature = None
+    if humidity is not None:
+        try: humidity = float(humidity)
+        except: humidity = None
+    conn = get_db()
+    conn.execute("INSERT INTO sensor_log (temperature, humidity, created_at) VALUES (?, ?, ?)",
+                 (temperature, humidity, bj_now()))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
+
+
 @app.route('/api/sensor/history')
 def sensor_history():
     if not session.get('admin'):
         return jsonify({'error': 'unauthorized'}), 403
     conn = get_db()
     rows = conn.execute("""
-        SELECT created_at, temperature, humidity FROM visitors
-        WHERE temperature IS NOT NULL OR humidity IS NOT NULL
+        SELECT created_at, temperature, humidity FROM sensor_log
         ORDER BY created_at ASC LIMIT 500
     """).fetchall()
     conn.close()
