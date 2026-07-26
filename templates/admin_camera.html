@@ -27,6 +27,8 @@
                         <tr>
                             <th>时间</th>
                             <th>姓名</th>
+                            <th>🌡 温度</th>
+                            <th>💧 湿度</th>
                             <th>照片</th>
                         </tr>
                     </thead>
@@ -53,9 +55,13 @@
     function rowHtml(v) {
         var photo = '-';
         if (v.photo) photo = '<img src="' + v.photo + '" class="photo-thumb" onclick="showPhoto(this.src)">';
+        var temp = v.temperature ? v.temperature.toFixed(1) + '°C' : '-';
+        var hum = v.humidity ? v.humidity.toFixed(1) + '%' : '-';
         return '<tr class="new-row">'
             + '<td>' + v.created_at + '</td>'
             + '<td>' + v.name + '</td>'
+            + '<td class="col-temp">' + temp + '</td>'
+            + '<td class="col-hum">' + hum + '</td>'
             + '<td>' + photo + '</td>'
             + '</tr>';
     }

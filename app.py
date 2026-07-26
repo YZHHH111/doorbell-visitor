@@ -42,6 +42,14 @@ def init_db():
         conn.execute("ALTER TABLE visitors ADD COLUMN photo TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE visitors ADD COLUMN temperature REAL DEFAULT NULL")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE visitors ADD COLUMN humidity REAL DEFAULT NULL")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -91,9 +99,17 @@ def visitor_camera():
     data = request.get_json()
     if not data or not data.get('name'):
         return jsonify({'error': 'name required'}), 400
+    temperature = data.get('temperature')
+    humidity = data.get('humidity')
+    if temperature is not None:
+        try: temperature = float(temperature)
+        except: temperature = None
+    if humidity is not None:
+        try: humidity = float(humidity)
+        except: humidity = None
     conn = get_db()
-    conn.execute("INSERT INTO visitors (name, reason, photo, created_at) VALUES (?, ?, ?, ?)",
-                 (data['name'], '摄像头识别', '', bj_now()))
+    conn.execute("INSERT INTO visitors (name, reason, photo, created_at, temperature, humidity) VALUES (?, ?, ?, ?, ?, ?)",
+                 (data['name'], '摄像头识别', '', bj_now(), temperature, humidity))
     conn.commit()
     conn.close()
     return jsonify({'status': 'ok'})
