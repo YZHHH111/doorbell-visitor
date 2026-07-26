@@ -218,7 +218,8 @@ def sensor_history():
         return jsonify({'error': 'unauthorized'}), 403
     conn = get_db()
     rows = conn.execute("""
-        SELECT created_at, temperature, humidity FROM sensor_log
+        SELECT created_at, temperature, humidity FROM visitors
+        WHERE temperature IS NOT NULL OR humidity IS NOT NULL
         ORDER BY created_at ASC LIMIT 500
     """).fetchall()
     conn.close()
