@@ -182,6 +182,20 @@ def qrcode_png():
     return send_file(buf, mimetype='image/png')
 
 
+@app.route('/api/sensor/history')
+def sensor_history():
+    if not session.get('admin'):
+        return jsonify({'error': 'unauthorized'}), 403
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT created_at, temperature, humidity FROM visitors
+        WHERE temperature IS NOT NULL OR humidity IS NOT NULL
+        ORDER BY created_at ASC LIMIT 500
+    """).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
 @app.route('/api/stats')
 def stats():
     if not session.get('admin'):

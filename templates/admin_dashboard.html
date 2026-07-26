@@ -49,6 +49,11 @@
             </div>
         </div>
 
+        <div class="chart-card sensor-chart-card">
+            <h3>🌡 温湿度变化</h3>
+            <canvas id="sensorChart"></canvas>
+        </div>
+
         <div class="table-card">
             <h3>访客记录 <span class="badge" id="liveBadge" style="display:none;background:#34c759;color:#fff">新</span></h3>
             <div class="table-wrap">
@@ -72,7 +77,7 @@
     </div>
 
     <script>
-    let dailyChart = null, topChart = null;
+    let dailyChart = null, topChart = null, sensorChart = null;
     let lastId = 0;
 
     function showPhoto(src) {
@@ -135,6 +140,7 @@
         updateSensorCard(data);
         updateBadges();
         loadCharts();
+        loadSensorChart();
     }
 
     async function pollNew() {
@@ -182,6 +188,36 @@
                 datasets: [{ data: (data.top || []).map(function(d) { return d.count; }), backgroundColor: ['#4f8cf7','#34c759','#ff9500','#ff3b30','#af52de'] }]
             },
             options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+    }
+
+    async function loadSensorChart() {
+        var r = await fetch('/api/sensor/history');
+        var data = await r.json();
+        if (data.length === 0) { document.querySelector('.sensor-chart-card').style.display = 'none'; return; }
+        document.querySelector('.sensor-chart-card').style.display = 'block';
+        if (sensorChart) sensorChart.destroy();
+        var labels = data.map(function(d) { return d.created_at.slice(11,16); });
+        var temps = data.map(function(d) { return d.temperature; });
+        var hums = data.map(function(d) { return d.humidity; });
+        sensorChart = new Chart(document.getElementById('sensorChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: '温度 (°C)', data: temps, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', yAxisID: 'y', tension: 0.3, fill: true },
+                    { label: '湿度 (%)', data: hums, borderColor: '#4f8cf7', backgroundColor: 'rgba(79,140,247,0.1)', yAxisID: 'y1', tension: 0.3, fill: true }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { type: 'linear', display: true, position: 'left', title: { display: true, text: '温度 (°C)' } },
+                    y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: '湿度 (%)' }, grid: { drawOnChartArea: false } }
+                }
+            }
         });
     }
 
