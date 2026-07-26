@@ -2,6 +2,8 @@ import os
 import sqlite3
 import base64
 import hashlib
+import urllib.request
+import urllib.parse
 from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, session, send_file
 from io import BytesIO
@@ -21,6 +23,18 @@ def bj_now():
 
 def bj_today():
     return datetime.now(BJ_TZ).strftime('%Y-%m-%d')
+
+
+def send_wechat(title, content=""):
+    sendkey = os.environ.get('SERVERCHAN_SENDKEY', '')
+    if not sendkey:
+        return
+    try:
+        data = urllib.parse.urlencode({'title': title, 'desp': content}).encode()
+        url = f'https://sctapi.ftqq.com/{sendkey}.send'
+        urllib.request.urlopen(url, data=data, timeout=5)
+    except:
+        pass
 
 
 def get_db():
@@ -92,6 +106,12 @@ def visitor_submit():
     new_id = cur.lastrowid
     conn.commit()
     conn.close()
+    msg = f"访客登记：{name}"
+    if reason:
+        msg += f"，事由：{reason}"
+    if phone:
+        msg += f"，电话：{phone}"
+    send_wechat(msg)
     return jsonify({'status': 'ok', 'message': f'{name}，登记成功！', 'id': new_id})
 
 
